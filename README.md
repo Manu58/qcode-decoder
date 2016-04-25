@@ -4,6 +4,7 @@
 
 ![Browser Compatibility](https://saucelabs.com/browser-matrix/cirocosta_github.svg?auth=a5761b97365c7191c7d725825877157f)
 
+It is now compatible with most newer browsers using the shim [weRTC/adapter](https://github.com/webrtc/adapter). Chrome only allows for camera use over https, unless the files are local.
 
 ## Using in your project
 
@@ -16,10 +17,13 @@ $ bower install qcode-decoder
 attach it to your `.html` file
 
 ```html
+<script src="../adapter.js"></script>
 <script src="../bower_components/qcode-decoder/build/qcode-decoder.min.js"></script>
 ```
 
 and use it!
+
+Be sure to include the adapter script before the.
 
 *For more examples, see the [github.io](http://cirocosta.github.io/qcode-decoder/) page and examples folder.*
 
@@ -30,8 +34,7 @@ Constructor. No args. Might be create with or without `new`.
 
 ```javascript
 var qr = new QCodeDecoder();
-// or
-var qr = QCodeDecoder();
+// or var qr = QCodeDecoder();
 ```
 
 This construction lets us be able to chain some methods (although not very necessary - the API is **really** simple).

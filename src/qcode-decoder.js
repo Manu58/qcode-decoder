@@ -32,19 +32,6 @@ QCodeDecoder.prototype.isCanvasSupported = function () {
 
 
 /**
- * Normalizes and Verifies if the user has
- * getUserMedia enabled in the browser.
- */
-QCodeDecoder.prototype.hasGetUserMedia = function () {
-  navigator.getUserMedia = navigator.getUserMedia ||
-                           navigator.webkitGetUserMedia ||
-                           navigator.mozGetUserMedia ||
-                           navigator.msGetUserMedia;
-
-  return !!(navigator.getUserMedia);
-};
-
-/**
  * Prepares the canvas element (which will
  * receive the image from the camera and provide
  * what the algorithm needs for checking for a
@@ -130,10 +117,9 @@ QCodeDecoder.prototype._captureToCanvas = function (videoElem, cb, once) {
 QCodeDecoder.prototype.decodeFromCamera = function (videoElem, cb, once) {
   var scope = (this.stop(), this);
 
-  if (!this.hasGetUserMedia())
-    cb(new Error('Couldn\'t get video from camera'));
 
-  navigator.getUserMedia(this.videoConstraints, function (stream) {
+  var p = navigator.mediaDevices.getUserMedia(this.videoConstraints);
+  p.then(function (stream) {
     videoElem.src = window.URL.createObjectURL(stream);
     scope.videoElem = videoElem;
     scope.stream = stream;
@@ -144,6 +130,7 @@ QCodeDecoder.prototype.decodeFromCamera = function (videoElem, cb, once) {
     }, 500);
   }, cb);
 
+  p.catch(function(err) {cb(new Error('capture error' + err.name));});
   return this;
 };
 
@@ -220,21 +207,26 @@ QCodeDecoder.prototype.setSourceId = function (sourceId) {
  * that are of the 'video' kind.
  */
 QCodeDecoder.prototype.getVideoSources = function (cb) {
-  var sources = [];
+  
 
-  if (!(MediaStreamTrack && MediaStreamTrack.getSources))
-    return cb(new Error('Current browser doest not support MediaStreamTrack.getSources'));
-
-  MediaStreamTrack.getSources(function (sourceInfos) {
-    sourceInfos.forEach(function(sourceInfo) {
-      if (sourceInfo.kind === 'video')
-        sources.push(sourceInfo);
-    });
-    cb(null, sources);
-  });
-
+  navigator.mediaDevices.enumerateDevices()
+  .then(function(devices) {
+      var sources = [];
+      devices.forEach(function(device) {
+          if (device.kind === 'videoinput') {
+            sources.push(device);
+      }});
+      cb(null, sources);
+  })
+  .catch(function(err) {
+    return cb(new Error('enumerateDevices'+ err.name + " : " + err.message));
+  }); 
+   //Extract video track.
+  
   return this;
 };
+
+
 
 
 return QCodeDecoder; }));
