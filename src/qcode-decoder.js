@@ -58,7 +58,6 @@ QCodeDecoder.prototype._prepareCanvas = function (videoElem) {
     this.canvasElem.width = videoElem.videoWidth;
     this.canvasElem.height = videoElem.videoHeight;
   }
-
   qrcode.setCanvasElement(this.canvasElem);
 
   return this;
@@ -78,8 +77,9 @@ QCodeDecoder.prototype._captureToCanvas = function (videoElem, cb, once) {
     clearTimeout(this.timerCapture);
 
   if (videoElem.videoWidth && videoElem.videoHeight) {
-    if (!this.canvasElem)
+    if (!this.canvasElem) {
       this._prepareCanvas(videoElem);
+    }
 
     var gCtx = this.canvasElem.getContext("2d");
     gCtx.clearRect(0, 0, videoElem.videoWidth,
@@ -87,19 +87,23 @@ QCodeDecoder.prototype._captureToCanvas = function (videoElem, cb, once) {
     gCtx.drawImage(videoElem, 0, 0,
                    videoElem.videoWidth,
                    videoElem.videoHeight);
-    try {
-      cb(null, qrcode.decode());
-
-      if (once) return;
-    } catch (err){
-      if (err !== "Couldn't find enough finder patterns")
+    qrcode.decode()
+    .then(function(result) {
+      cb(null, result);
+      if (once) {
+        return;
+      }
+    })
+    .catch(function(err) {
+      if (err !== "Couldn't find enough finder patterns") {
         cb(new Error(err));
-    }
-  }
-
+      }
+    });
+  } 
   this.timerCapture = setTimeout(function () {
-    this._captureToCanvas.call(this, videoElem, cb, once);
-  }.bind(this), 500);
+      this._captureToCanvas.call(this, videoElem, cb, once);
+    }.bind(this), 500
+  );
 };
 
 /**
@@ -116,10 +120,8 @@ QCodeDecoder.prototype._captureToCanvas = function (videoElem, cb, once) {
  */
 QCodeDecoder.prototype.decodeFromCamera = function (videoElem, cb, once) {
   var scope = (this.stop(), this);
-
-
-  var p = navigator.mediaDevices.getUserMedia(this.videoConstraints);
-  p.then(function (stream) {
+  navigator.mediaDevices.getUserMedia(this.videoConstraints)
+  .then(function (stream) {
     videoElem.src = window.URL.createObjectURL(stream);
     scope.videoElem = videoElem;
     scope.stream = stream;
@@ -127,10 +129,12 @@ QCodeDecoder.prototype.decodeFromCamera = function (videoElem, cb, once) {
 
     setTimeout(function () {
       scope._captureToCanvas.call(scope, videoElem, cb, once);
-    }, 500);
-  }, cb);
-
-  p.catch(function(err) {cb(new Error('capture error' + err.name));});
+      }, 500
+    );
+  })
+  .catch(function(err) {
+    cb(new Error('capture error' + err.name));
+  });
   return this;
 };
 
@@ -189,11 +193,9 @@ QCodeDecoder.prototype.stop = function() {
  * the current default)
  */
 QCodeDecoder.prototype.setSourceId = function (sourceId) {
-  if (sourceId)
-    this.videoConstraints.video = { optional: [{ sourceId: sourceId }]};
-  else
-    this.videoConstraints.video = true;
-
+  if (sourceId) {
+    this.videoConstraints.deviceId = sourceId; //{ optional: [{ sourceId: sourceId }]};
+  }
   return this;
 };
 
@@ -202,9 +204,9 @@ QCodeDecoder.prototype.setSourceId = function (sourceId) {
  * Gets a list of all available video sources on
  * the current device.
  * @param {Function} cb callback to be resolved
- * with error (first param) ou results (second
+ * with error (first param) or results (second
  * param) - a list containing all of the sources
- * that are of the 'video' kind.
+ * that are of the 'videoinput' kind.
  */
 QCodeDecoder.prototype.getVideoSources = function (cb) {
   
@@ -221,7 +223,6 @@ QCodeDecoder.prototype.getVideoSources = function (cb) {
   .catch(function(err) {
     return cb(new Error('enumerateDevices'+ err.name + " : " + err.message));
   }); 
-   //Extract video track.
   
   return this;
 };
